@@ -17,6 +17,8 @@ typedef struct {
 
 void hashmap_init(HashMap *hashmap, size_t initial_capacity);
 
+void hashmap_destroy(HashMap *hashmap);
+
 void hashmap_clear(HashMap *hashmap);
 
 void hashmap_set(HashMap *hashmap, int key, int value);

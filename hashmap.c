@@ -21,6 +21,12 @@ void hashmap_init(HashMap *hashmap, size_t initial_capacity)
 	hashmap->size = 0;
 }
 
+void hashmap_destroy(HashMap *hashmap)
+{
+	hashmap_clear(hashmap);
+	free(hashmap->chains);
+}
+
 void hashmap_clear(HashMap *hashmap)
 {
 	for (size_t i = 0; i < hashmap->capacity; i++) {
@@ -45,25 +51,17 @@ static inline int get_hash(int key, size_t capacity)
 static void rechain(MapNode *chains, size_t new_capacity, size_t old_capacity)
 {
 	for (size_t i = 0; i < old_capacity; i++) {
-		// skip empty chains
-		if (chains[i].next == NULL) {
-			continue;
-		}
-		MapNode *prev = &chains[i];
-		MapNode *curr = chains[i].next;
-		while (curr != NULL) {
-			MapNode* next = curr->next; // get next in case MapNode is moved to another chain
-			int old_hash = get_hash(curr->key, old_capacity);
-			int new_hash = get_hash(curr->key, new_capacity);
+		MapNode *curr = &chains[i];
+		while (curr->next != NULL) {
+			int old_hash = get_hash(curr->next->key, old_capacity);
+			int new_hash = get_hash(curr->next->key, new_capacity);
 			if (old_hash != new_hash) {
-				// remove MapNode from current chain
-				prev->next = curr->next;
-				// add to front of the next chain
-				curr->next = chains[new_hash].next;
-				chains[new_hash].next = curr;
+				MapNode* node_to_move = curr->next;
+				curr->next = node_to_move->next;
+				node_to_move->next = chains[new_hash].next;
+				chains[new_hash].next = node_to_move;
 			}
-			prev = curr;
-			curr = next;
+			curr = curr->next;
 		}
 	}
 }
@@ -82,7 +80,6 @@ static void resize(HashMap *hashmap)
 		new_chains[i].next = NULL;
 	}
 	rechain(new_chains, new_capacity, hashmap->capacity);
-
 	hashmap->chains = new_chains;
 	hashmap->capacity = new_capacity;
 }
